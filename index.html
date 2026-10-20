@@ -1,0 +1,2560 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>STEINER WARS — Arcade Date Battle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Heebo:wght@400;500;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #060A16;
+      --bg-panel: #0D152C;
+      --bg-card: #121D3B;
+      --bg-card-hover: #18274E;
+      --border-dim: rgba(120, 160, 255, 0.16);
+      --text-main: #F2F6FF;
+      --text-muted: #94A8D6;
+
+      /* Yoni — Cyber Tactical Blue */
+      --yoni-main: #00E5FF;
+      --yoni-bright: #68F3FF;
+      --yoni-dark: #005B9F;
+      --yoni-surface: rgba(0, 229, 255, 0.14);
+      --yoni-glow: 0 0 18px rgba(0, 229, 255, 0.45);
+
+      /* YAAL — Neon Comms Orange */
+      --yael-main: #FF7A00;
+      --yael-bright: #FFB340;
+      --yael-dark: #9E3D00;
+      --yael-surface: rgba(255, 122, 0, 0.15);
+      --yael-glow: 0 0 18px rgba(255, 122, 0, 0.45);
+
+      /* Arcade Accents */
+      --neon-green: #00F59B;
+      --neon-gold: #FFD600;
+      --neon-pink: #FF2E93;
+      --neon-purple: #B388FF;
+      --danger: #FF4757;
+
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* Retro Arcade Grid & Scanline Backdrop */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(0, 229, 255, 0.12), transparent 38%),
+        radial-gradient(circle at 82% 16%, rgba(255, 122, 0, 0.12), transparent 38%),
+        linear-gradient(rgba(14, 24, 54, 0.35) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14, 24, 54, 0.35) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.015) 0px,
+        rgba(255, 255, 255, 0.015) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 2;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 12px 110px;
+    }
+
+    /* Sticky Top Arcade Header & HUD */
+    .sticky-hud {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(6, 10, 22, 0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(120, 160, 255, 0.22);
+      padding: 10px 0 8px;
+      margin: 0 -12px 14px;
+      padding-left: 12px;
+      padding-right: 12px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+    }
+
+    .hud-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .arcade-logo-badge {
+      background: linear-gradient(135deg, #00E5FF 0%, #2979FF 50%, #FF7A00 100%);
+      padding: 2px;
+      border-radius: 11px;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+    }
+
+    .arcade-logo-inner {
+      background: #081026;
+      border-radius: 9px;
+      padding: 4px 9px;
+      font-family: 'Fredoka', 'Heebo', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logo-Steiner {
+      background: linear-gradient(90deg, var(--yoni-main), #FFF, var(--yael-main));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .hud-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .hud-btn {
+      appearance: none;
+      border: 1px solid rgba(148, 168, 214, 0.28);
+      background: rgba(18, 29, 59, 0.88);
+      color: var(--text-main);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-family: 'Heebo', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+    }
+
+    .hud-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .hud-btn:active {
+      transform: scale(0.95);
+    }
+
+    .active-player-pill {
+      border-width: 2px;
+      padding: 5px 11px;
+    }
+
+    .active-player-pill.player-yoni {
+      border-color: var(--yoni-main);
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--yoni-bright);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.28);
+    }
+
+    .active-player-pill.player-yael {
+      border-color: var(--yael-main);
+      background: rgba(255, 122, 0, 0.16);
+      color: var(--yael-bright);
+      box-shadow: 0 0 12px rgba(255, 122, 0, 0.28);
+    }
+
+    .player-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .player-yoni .player-dot {
+      background: var(--yoni-main);
+      box-shadow: 0 0 8px var(--yoni-main);
+    }
+
+    .player-yael .player-dot {
+      background: var(--yael-main);
+      box-shadow: 0 0 8px var(--yael-main);
+    }
+
+    /* Scoreboard Battle Bar */
+    .scoreboard-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      background: rgba(13, 21, 44, 0.95);
+      border: 1px solid rgba(120, 160, 255, 0.2);
+      border-radius: 14px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+
+    .score-side {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-side.yael-side {
+      justify-content: flex-end;
+      text-align: left;
+    }
+
+    .mini-avatar-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .mini-avatar-box.yoni {
+      background: rgba(0, 229, 255, 0.14);
+      border: 1.5px solid var(--yoni-main);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+    }
+
+    .mini-avatar-box.yael {
+      background: rgba(255, 122, 0, 0.14);
+      border: 1.5px solid var(--yael-main);
+      box-shadow: 0 0 10px rgba(255, 122, 0, 0.25);
+    }
+
+    .score-meta {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+
+    .score-name {
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+
+    .score-name.yoni { color: var(--yoni-bright); }
+    .score-name.yael { color: var(--yael-bright); }
+
+    .score-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #FFF;
+    }
+
+    .score-unit {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .vs-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 0 6px;
+    }
+
+    .vs-badge {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--neon-gold);
+      background: rgba(255, 214, 0, 0.12);
+      border: 1px solid rgba(255, 214, 0, 0.35);
+      border-radius: 999px;
+      padding: 1px 8px;
+    }
+
+    .free-days-counter {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* Tug of War Progress Bar */
+    .tug-bar-wrap {
+      height: 7px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+      margin-bottom: 8px;
+    }
+
+    .tug-seg-yoni {
+      background: linear-gradient(90deg, #0077FF, var(--yoni-main));
+      height: 100%;
+      transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .tug-seg-empty {
+      background: rgba(255, 255, 255, 0.07);
+      height: 100%;
+      transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .tug-seg-yael {
+      background: linear-gradient(90deg, var(--yael-main), #FFB300);
+      height: 100%;
+      transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Navigation & Filter Row */
+    .nav-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: 2px;
+    }
+
+    .nav-strip::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .nav-pill {
+      appearance: none;
+      border: 1px solid rgba(148, 168, 214, 0.24);
+      background: rgba(15, 24, 50, 0.85);
+      color: var(--text-muted);
+      font-family: 'Heebo', sans-serif;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .nav-pill:hover,
+    .nav-pill.active {
+      color: #FFF;
+      border-color: var(--neon-gold);
+      background: rgba(255, 214, 0, 0.15);
+    }
+
+    /* Sync Status Bar */
+    .sync-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      padding: 6px 12px;
+      background: rgba(13, 21, 44, 0.78);
+      border: 1px solid var(--border-dim);
+      border-radius: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .sync-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-green);
+      box-shadow: 0 0 8px var(--neon-green);
+    }
+
+    .sync-dot.pending {
+      background: var(--neon-gold);
+      box-shadow: 0 0 8px var(--neon-gold);
+      animation: pulseBlink 0.9s infinite alternate;
+    }
+
+    .sync-dot.saving {
+      background: var(--yoni-main);
+      box-shadow: 0 0 10px var(--yoni-main);
+      animation: pulseBlink 0.45s infinite alternate;
+    }
+
+    .sync-dot.error {
+      background: var(--danger);
+      box-shadow: 0 0 10px var(--danger);
+    }
+
+    @keyframes pulseBlink {
+      from { opacity: 0.4; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Month Section Styling */
+    .month-section {
+      margin-bottom: 24px;
+      background: rgba(13, 21, 44, 0.65);
+      border: 1px solid rgba(120, 160, 255, 0.18);
+      border-radius: var(--radius-lg);
+      padding: 14px 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+      scroll-margin-top: 165px;
+    }
+
+    .month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(120, 160, 255, 0.16);
+      flex-wrap: wrap;
+    }
+
+    .month-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .month-sector-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(0, 229, 255, 0.14);
+      color: var(--yoni-bright);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+    }
+
+    .month-title {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #FFF;
+    }
+
+    .month-stats-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.74rem;
+      font-weight: 700;
+    }
+
+    .m-stat-yoni {
+      color: var(--yoni-bright);
+      background: rgba(0, 229, 255, 0.12);
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 229, 255, 0.25);
+    }
+
+    .m-stat-yael {
+      color: var(--yael-bright);
+      background: rgba(255, 122, 0, 0.12);
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 122, 0, 0.25);
+    }
+
+    /* Responsive Date Grid */
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+      gap: 9px;
+    }
+
+    @media (max-width: 480px) {
+      .days-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+    }
+
+    /* Individual Day Card */
+    .day-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1.5px solid rgba(130, 165, 250, 0.18);
+      border-radius: var(--radius-md);
+      padding: 10px 10px 9px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 104px;
+      transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+                  border-color 0.18s ease,
+                  background 0.18s ease,
+                  box-shadow 0.18s ease;
+      overflow: hidden;
+      text-align: right;
+    }
+
+    .day-card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.36);
+    }
+
+    .day-card:active {
+      transform: scale(0.95);
+    }
+
+    /* Weekend accent */
+    .day-card.is-weekend {
+      background: linear-gradient(160deg, rgba(26, 37, 78, 0.95), rgba(18, 26, 56, 0.95));
+      border-color: rgba(179, 136, 255, 0.32);
+    }
+
+    /* Today highlight */
+    .day-card.is-today {
+      box-shadow: 0 0 0 2px var(--neon-green), 0 0 16px rgba(0, 245, 155, 0.35);
+    }
+
+    /* Owned by Yoni */
+    .day-card.owned-yoni {
+      background: linear-gradient(145deg, rgba(0, 229, 255, 0.22) 0%, rgba(10, 32, 68, 0.95) 100%);
+      border-color: var(--yoni-main);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.28), inset 0 0 12px rgba(0, 229, 255, 0.12);
+    }
+
+    /* Owned by YAAL */
+    .day-card.owned-yael {
+      background: linear-gradient(145deg, rgba(255, 122, 0, 0.24) 0%, rgba(48, 22, 12, 0.95) 100%);
+      border-color: var(--yael-main);
+      box-shadow: 0 0 16px rgba(255, 122, 0, 0.28), inset 0 0 12px rgba(255, 122, 0, 0.12);
+    }
+
+    /* Conquest Animation */
+    @keyframes conquerPop {
+      0% { transform: scale(0.88); }
+      45% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .day-card.just-conquered {
+      animation: conquerPop 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .day-top-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .day-num-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+
+    .day-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem;
+      font-weight: 800;
+      line-height: 1;
+      color: #FFF;
+    }
+
+    .day-month-short {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .day-weekday-badge {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .day-weekday-badge.fri {
+      color: #FFD54F;
+      background: rgba(255, 213, 79, 0.14);
+      border: 1px solid rgba(255, 213, 79, 0.3);
+    }
+
+    .day-weekday-badge.sat {
+      color: #D1C4E9;
+      background: rgba(179, 136, 255, 0.16);
+      border: 1px solid rgba(179, 136, 255, 0.35);
+    }
+
+    .day-badges-mid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin: 6px 0;
+    }
+
+    .holiday-tag {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #FFE082;
+      background: rgba(255, 193, 7, 0.16);
+      border: 1px solid rgba(255, 193, 7, 0.38);
+      padding: 2px 6px;
+      border-radius: 6px;
+      line-height: 1.2;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .today-tag {
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #052E1C;
+      background: var(--neon-green);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+
+    .dirty-dot {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--neon-gold);
+      box-shadow: 0 0 6px var(--neon-gold);
+    }
+
+    .day-owner-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 5px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .owner-pill-yoni {
+      color: var(--yoni-bright);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .owner-pill-yael {
+      color: var(--yael-bright);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .owner-pill-empty {
+      color: rgba(148, 168, 214, 0.58);
+      font-weight: 600;
+      font-size: 0.72rem;
+    }
+
+    /* Floating Bottom Dock for Steiner List */
+    .bottom-dock {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      left: 0;
+      z-index: 45;
+      background: linear-gradient(to top, rgba(6, 10, 22, 0.98) 65%, rgba(6, 10, 22, 0));
+      padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .bottom-dock-inner {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .btn-steiner-list {
+      flex: 1;
+      appearance: none;
+      border: 2px solid var(--neon-gold);
+      background: linear-gradient(135deg, #FFB300 0%, #FF6D00 100%);
+      color: #080E1E;
+      font-family: 'Heebo', sans-serif;
+      font-size: 1.02rem;
+      font-weight: 900;
+      padding: 13px 18px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 6px 24px rgba(255, 179, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .btn-steiner-list:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(255, 179, 0, 0.55);
+    }
+
+    .btn-steiner-list:active {
+      transform: scale(0.97);
+    }
+
+    /* Modals (Character Select, Steiner List, Setup Guide) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(4, 7, 16, 0.86);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-backdrop.hidden {
+      display: none;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: linear-gradient(165deg, #101A38 0%, #090F22 100%);
+      border: 1.5px solid rgba(120, 160, 255, 0.32);
+      border-radius: 24px;
+      padding: 22px 18px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.78);
+      position: relative;
+    }
+
+    .char-select-header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .arcade-kicker {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--neon-green);
+      background: rgba(0, 245, 155, 0.12);
+      border: 1px solid rgba(0, 245, 155, 0.35);
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+
+    .char-select-title {
+      margin: 0 0 6px;
+      font-family: 'Fredoka', 'Heebo', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--yoni-main), #FFF, var(--yael-main));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .char-select-sub {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+    }
+
+    .characters-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin: 18px 0 10px;
+    }
+
+    @media (max-width: 520px) {
+      .characters-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .char-card {
+      appearance: none;
+      background: rgba(18, 29, 59, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border-radius: 20px;
+      padding: 16px 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      color: var(--text-main);
+      font-family: 'Heebo', sans-serif;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .char-card.yoni-card {
+      border-color: rgba(0, 229, 255, 0.55);
+      background: radial-gradient(circle at 50% 25%, rgba(0, 229, 255, 0.22), rgba(14, 23, 48, 0.95) 70%);
+    }
+
+    .char-card.yoni-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--yoni-main);
+      box-shadow: var(--yoni-glow);
+    }
+
+    .char-card.yael-card {
+      border-color: rgba(255, 122, 0, 0.55);
+      background: radial-gradient(circle at 50% 25%, rgba(255, 122, 0, 0.22), rgba(28, 18, 36, 0.95) 70%);
+    }
+
+    .char-card.yael-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--yael-main);
+      box-shadow: var(--yael-glow);
+    }
+
+    .char-svg-stage {
+      width: 148px;
+      height: 148px;
+      margin-bottom: 10px;
+      animation: floatBob 3s ease-in-out infinite;
+    }
+
+    .char-card.yael-card .char-svg-stage {
+      animation-delay: -1.5s;
+    }
+
+    @keyframes floatBob {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .char-name {
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin: 0 0 2px;
+    }
+
+    .yoni-card .char-name { color: var(--yoni-bright); }
+    .yael-card .char-name { color: var(--yael-bright); }
+
+    .char-role {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .char-cta {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .yoni-card .char-cta {
+      background: var(--yoni-main);
+      color: #031525;
+    }
+
+    .yael-card .char-cta {
+      background: var(--yael-main);
+      color: #1F0B00;
+    }
+
+    /* Steiner List Modal */
+    .modal-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(148, 168, 214, 0.2);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 900;
+    }
+
+    .close-modal-btn {
+      appearance: none;
+      border: 1px solid rgba(148, 168, 214, 0.3);
+      background: rgba(255, 255, 255, 0.06);
+      color: #FFF;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .steiner-summary-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .sum-box {
+      background: rgba(18, 29, 59, 0.9);
+      border: 1px solid rgba(148, 168, 214, 0.22);
+      border-radius: 14px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .sum-box.yoni { border-color: var(--yoni-main); }
+    .sum-box.yael { border-color: var(--yael-main); }
+
+    .sum-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.45rem;
+      font-weight: 800;
+      display: block;
+    }
+
+    .sum-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .steiner-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 140px;
+      appearance: none;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: #1A2852;
+      color: #FFF;
+      font-family: 'Heebo', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .action-btn:hover {
+      background: #24376E;
+    }
+
+    .action-btn.csv {
+      border-color: var(--neon-green);
+      background: rgba(0, 245, 155, 0.16);
+      color: #70FFCA;
+    }
+
+    .action-btn.wa {
+      border-color: #25D366;
+      background: rgba(37, 211, 102, 0.18);
+      color: #8SF7B0;
+    }
+
+    .action-btn.print {
+      border-color: var(--yoni-main);
+      background: rgba(0, 229, 255, 0.15);
+      color: var(--yoni-bright);
+    }
+
+    .steiner-table-wrap {
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid rgba(148, 168, 214, 0.2);
+      border-radius: 12px;
+      background: rgba(6, 10, 22, 0.65);
+    }
+
+    .steiner-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      text-align: right;
+    }
+
+    .steiner-table th,
+    .steiner-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(148, 168, 214, 0.12);
+    }
+
+    .steiner-table th {
+      position: sticky;
+      top: 0;
+      background: #111C3B;
+      color: var(--text-muted);
+      font-weight: 800;
+      z-index: 2;
+    }
+
+    .code-pre {
+      background: #050811;
+      border: 1px solid rgba(120, 160, 255, 0.25);
+      border-radius: 12px;
+      padding: 12px;
+      color: #CBE1FF;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      overflow-x: auto;
+      direction: ltr;
+      text-align: left;
+      max-height: 280px;
+      user-select: text;
+      white-space: pre;
+    }
+
+    .guide-steps {
+      line-height: 1.6;
+      font-size: 0.88rem;
+      color: #DCE7FF;
+      user-select: text;
+    }
+
+    .guide-steps h4 {
+      color: var(--neon-gold);
+      margin: 14px 0 4px;
+    }
+
+    /* Toast Notification */
+    .arcade-toast {
+      position: fixed;
+      bottom: 84px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(12, 21, 46, 0.96);
+      border: 1.5px solid var(--neon-gold);
+      color: #FFF;
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      font-weight: 800;
+      z-index: 95;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+
+    .arcade-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Clean Print Stylesheet */
+    @media print {
+      body, html {
+        background: #FFFFFF !important;
+        color: #000000 !important;
+      }
+      body::before, body::after,
+      .sticky-hud, .app-shell, .bottom-dock,
+      .steiner-actions-row, .close-modal-btn,
+      #charModal, #setupModal, .arcade-toast {
+        display: none !important;
+      }
+      #steinerModal {
+        position: static !important;
+        display: block !important;
+        background: #FFFFFF !important;
+        padding: 0 !important;
+      }
+      #steinerModal .modal-card {
+        max-width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+      }
+      .steiner-table-wrap {
+        max-height: none !important;
+        overflow: visible !important;
+        border: 1px solid #000 !important;
+        background: #FFF !important;
+      }
+      .steiner-table th, .steiner-table td {
+        color: #000 !important;
+        background: #FFF !important;
+        border-bottom: 1px solid #CCC !important;
+      }
+      .sum-box {
+        border: 1px solid #000 !important;
+        background: #FFF !important;
+        color: #000 !important;
+      }
+      .sum-label, .modal-title {
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden SVG Sprite Definitions for Original Military Radio Operator Characters -->
+  <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+    <defs>
+      <!-- YONI: Cute Blue Military Radio Operator (קשר כחול) -->
+      <g id="svg-char-yoni">
+        <circle cx="80" cy="80" r="72" fill="#081A3A" stroke="#00E5FF" stroke-width="3"/>
+        <!-- Animated Radio Waves -->
+        <path d="M124 22 C136 22, 144 30, 144 42" fill="none" stroke="#00E5FF" stroke-width="3" stroke-linecap="round"/>
+        <path d="M128 12 C145 12, 154 24, 154 40" fill="none" stroke="#68F3FF" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
+        <!-- Backpack Radio Set (מ.ק. 77 כחול) -->
+        <rect x="26" y="76" width="24" height="48" rx="6" fill="#0B3B69" stroke="#00E5FF" stroke-width="2.5"/>
+        <line x1="34" y1="76" x2="34" y2="20" stroke="#90CAF9" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="34" cy="18" r="5" fill="#00E5FF"/>
+        <circle cx="36" cy="90" r="3" fill="#00F59B"/>
+        <circle cx="36" cy="100" r="3" fill="#FFD600"/>
+        <!-- Shoulders & Tactical Vest -->
+        <path d="M36 138 C38 110, 122 110, 124 138 Z" fill="#0D47A1" stroke="#00E5FF" stroke-width="2.5"/>
+        <rect x="62" y="118" width="36" height="18" rx="4" fill="#072247" stroke="#00E5FF" stroke-width="1.8"/>
+        <text x="80" y="130" text-anchor="middle" fill="#00E5FF" font-family="monospace" font-size="8" font-weight="bold">MK-77</text>
+        <!-- Head / Face -->
+        <circle cx="82" cy="82" r="32" fill="#FFD1B3" stroke="#102040" stroke-width="2"/>
+        <!-- Rosy Arcade Cheeks -->
+        <ellipse cx="64" cy="88" rx="5" ry="3" fill="#FF8A80" opacity="0.6"/>
+        <ellipse cx="100" cy="88" rx="5" ry="3" fill="#FF8A80" opacity="0.6"/>
+        <!-- Eyes & Happy Expression -->
+        <circle cx="71" cy="80" r="4.2" fill="#0A192F"/>
+        <circle cx="93" cy="80" r="4.2" fill="#0A192F"/>
+        <circle cx="72.5" cy="78.5" r="1.5" fill="#FFFFFF"/>
+        <circle cx="94.5" cy="78.5" r="1.5" fill="#FFFFFF"/>
+        <path d="M73 92 Q82 100 91 92" fill="none" stroke="#0A192F" stroke-width="3" stroke-linecap="round"/>
+        <!-- Comms Helmet (קסדת קשר כחולה) -->
+        <path d="M46 72 C46 44, 118 44, 118 72 Z" fill="#0277BD" stroke="#00E5FF" stroke-width="3"/>
+        <rect x="44" y="66" width="76" height="8" rx="4" fill="#00B0FF" stroke="#081A3A" stroke-width="2"/>
+        <!-- Tactical Goggles on Helmet -->
+        <rect x="54" y="52" width="24" height="13" rx="6" fill="#081A3A" stroke="#00E5FF" stroke-width="2.2"/>
+        <rect x="86" y="52" width="24" height="13" rx="6" fill="#081A3A" stroke="#00E5FF" stroke-width="2.2"/>
+        <line x1="78" y1="58" x2="86" y2="58" stroke="#00E5FF" stroke-width="2.5"/>
+        <!-- Headset Earcup & Boom Mic -->
+        <rect x="42" y="72" width="12" height="22" rx="6" fill="#00E5FF" stroke="#081A3A" stroke-width="2"/>
+        <rect x="110" y="72" width="12" height="22" rx="6" fill="#00E5FF" stroke="#081A3A" stroke-width="2"/>
+        <path d="M114 88 Q106 98 88 97" fill="none" stroke="#00E5FF" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="86" cy="97" r="4" fill="#00F59B" stroke="#081A3A" stroke-width="1.5"/>
+      </g>
+
+      <!-- YAAL: Cute Orange Military Radio Operator (קשר כתום) -->
+      <g id="svg-char-yael">
+        <circle cx="80" cy="80" r="72" fill="#2A1205" stroke="#FF7A00" stroke-width="3"/>
+        <!-- Dual Antennas & Signal Sparks -->
+        <line x1="122" y1="74" x2="132" y2="20" stroke="#FFB340" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="132" cy="18" r="5" fill="#FF7A00"/>
+        <path d="M24 30 L34 24 L30 36 L40 30" fill="none" stroke="#FFD600" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <!-- Backpack Comms Unit (מ.ק. 77 כתום) -->
+        <rect x="110" y="74" width="22" height="48" rx="6" fill="#8C3800" stroke="#FF9100" stroke-width="2.5"/>
+        <circle cx="121" cy="88" r="3" fill="#00F59B"/>
+        <circle cx="121" cy="98" r="3" fill="#FF2E93"/>
+        <!-- Shoulders & Tactical Vest -->
+        <path d="M36 138 C38 110, 122 110, 124 138 Z" fill="#D84315" stroke="#FF9100" stroke-width="2.5"/>
+        <rect x="60" y="118" width="40" height="18" rx="4" fill="#3E1908" stroke="#FF9100" stroke-width="1.8"/>
+        <text x="80" y="130" text-anchor="middle" fill="#FFB340" font-family="monospace" font-size="8" font-weight="bold">COM-77</text>
+        <!-- Head / Face -->
+        <circle cx="78" cy="82" r="31" fill="#FFD5BA" stroke="#2A1205" stroke-width="2"/>
+        <!-- Cheeks -->
+        <ellipse cx="61" cy="88" rx="5" ry="3" fill="#FF7043" opacity="0.6"/>
+        <ellipse cx="95" cy="88" rx="5" ry="3" fill="#FF7043" opacity="0.6"/>
+        <!-- Eyes & Confident Smile -->
+        <circle cx="67" cy="80" r="4.2" fill="#1F0D05"/>
+        <circle cx="89" cy="80" r="4.2" fill="#1F0D05"/>
+        <circle cx="68.5" cy="78.5" r="1.5" fill="#FFFFFF"/>
+        <circle cx="90.5" cy="78.5" r="1.5" fill="#FFFFFF"/>
+        <path d="M69 91 Q78 99 88 91" fill="none" stroke="#1F0D05" stroke-width="3" stroke-linecap="round"/>
+        <!-- Orange Tactical Comms Helmet -->
+        <path d="M43 72 C43 43, 113 43, 113 72 Z" fill="#E65100" stroke="#FFB340" stroke-width="3"/>
+        <rect x="41" y="65" width="74" height="8" rx="4" fill="#FF9100" stroke="#2A1205" stroke-width="2"/>
+        <!-- Helmet Star/Comms Badge -->
+        <polygon points="78,49 81,55 88,56 83,60 84,66 78,63 72,66 73,60 68,56 75,55" fill="#FFD600"/>
+        <!-- Headset Earcups & Handset Mic -->
+        <rect x="39" y="72" width="12" height="22" rx="6" fill="#FF9100" stroke="#2A1205" stroke-width="2"/>
+        <rect x="105" y="72" width="12" height="22" rx="6" fill="#FF9100" stroke="#2A1205" stroke-width="2"/>
+        <path d="M44 88 Q52 98 70 96" fill="none" stroke="#FFB340" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="72" cy="96" r="4" fill="#FFD600" stroke="#2A1205" stroke-width="1.5"/>
+      </g>
+    </defs>
+  </svg>
+
+  <!-- Main Application Shell -->
+  <div class="app-shell">
+    <!-- Sticky Top Arcade HUD -->
+    <header class="sticky-hud">
+      <div class="hud-top-row">
+        <div class="brand-title-wrap">
+          <div class="arcade-logo-badge">
+            <div class="arcade-logo-inner">
+              <span>📡</span>
+              <span class="logo-Steiner">STEINER WARS</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hud-controls">
+          <button type="button" id="btnSwitchPlayer" class="hud-btn active-player-pill player-yoni" title="החלף שחקן פעיל">
+            <span class="player-dot"></span>
+            <span id="activePlayerLabel">יוני (קשר כחול)</span>
+            <span>🔄</span>
+          </button>
+          <button type="button" id="btnToggleSound" class="hud-btn" title="הפעל/השתק אפקטים קוליים">
+            <span id="soundIcon">🔊</span>
+          </button>
+          <button type="button" id="btnOpenSetup" class="hud-btn" title="קוד והוראות הקמה (Code.gs)">
+            <span>⚙️ קוד והקמה</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scoreboard Battle Row -->
+      <div class="scoreboard-grid">
+        <div class="score-side yoni-side">
+          <div class="mini-avatar-box yoni">
+            <svg width="32" height="32" viewBox="0 0 160 160"><use href="#svg-char-yoni"></use></svg>
+          </div>
+          <div class="score-meta">
+            <span class="score-name yoni">יוני · כחול</span>
+            <div>
+              <span id="countYoni" class="score-count">0</span>
+              <span class="score-unit">ימים</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="vs-center">
+          <span class="vs-badge">VS · 96 ימים</span>
+          <span id="countEmpty" class="free-days-counter">96 פנויים</span>
+        </div>
+
+        <div class="score-side yael-side">
+          <div class="score-meta">
+            <span class="score-name yael">יעל (YAAL) · כתום</span>
+            <div>
+              <span id="countYael" class="score-count">0</span>
+              <span class="score-unit">ימים</span>
+            </div>
+          </div>
+          <div class="mini-avatar-box yael">
+            <svg width="32" height="32" viewBox="0 0 160 160"><use href="#svg-char-yael"></use></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tug of War Progress Bar -->
+      <div class="tug-bar-wrap" aria-label="מאזן כוחות">
+        <div id="barYoni" class="tug-seg-yoni" style="width: 0%"></div>
+        <div id="barEmpty" class="tug-seg-empty" style="width: 100%"></div>
+        <div id="barYael" class="tug-seg-yael" style="width: 0%"></div>
+      </div>
+
+      <!-- Quick Month Jump & Filter Bar -->
+      <div class="nav-strip">
+        <div class="pill-group" id="monthJumpGroup">
+          <button type="button" class="nav-pill" data-jump="month-2026-11">נוב׳ 26</button>
+          <button type="button" class="nav-pill" data-jump="month-2026-12">דצמ׳ 26</button>
+          <button type="button" class="nav-pill" data-jump="month-2027-01">ינו׳ 27</button>
+          <button type="button" class="nav-pill" data-jump="month-2027-02">פבר׳ 27</button>
+        </div>
+        <div class="pill-group" id="filterGroup">
+          <button type="button" class="nav-pill active" data-filter="all">הכל</button>
+          <button type="button" class="nav-pill" data-filter="Yoni">יוני</button>
+          <button type="button" class="nav-pill" data-filter="YAAL">יעל (YAAL)</button>
+          <button type="button" class="nav-pill" data-filter="empty">פנויים</button>
+          <button type="button" class="nav-pill" data-filter="special">סופ״ש/חגים</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Live Server Sync Status Bar -->
+    <div class="sync-status-bar">
+      <div class="sync-indicator">
+        <span id="syncDot" class="sync-dot"></span>
+        <span id="syncStatusText">מתחבר לתדר שטיינר...</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="lastSyncTimeLabel">22.11.2026 – 25.02.2027</span>
+        <button type="button" id="btnManualSync" class="hud-btn" style="padding:3px 8px;font-size:0.72rem;">🔄 סנכרן כעת</button>
+      </div>
+    </div>
+
+    <!-- Months Timeline Container -->
+    <main id="calendarContainer"></main>
+  </div>
+
+  <!-- Floating Bottom Action Dock -->
+  <div class="bottom-dock">
+    <div class="bottom-dock-inner">
+      <button type="button" id="btnGenerateSteiner" class="btn-steiner-list">
+        <span>📜</span>
+        <span>הפק רשימת שטיינר</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Character Selection Modal (Entry Screen & Switcher) -->
+  <div id="charModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="charModalTitle">
+    <div class="modal-card">
+      <div class="char-select-header">
+        <span class="arcade-kicker">🕹️ ARCADE DATE BATTLE · 22.11.26–25.02.27</span>
+        <h1 id="charModalTitle" class="char-select-title">STEINER WARS</h1>
+        <p class="char-select-sub">בחרו את דמות הקשר שלכם והיכנסו לזירת שיבוץ התאריכים המשותפת</p>
+      </div>
+
+      <div class="characters-grid">
+        <button type="button" id="btnSelectYoni" class="char-card yoni-card">
+          <div class="char-svg-stage">
+            <svg width="148" height="148" viewBox="0 0 160 160"><use href="#svg-char-yoni"></use></svg>
+          </div>
+          <h2 class="char-name">יוני</h2>
+          <div class="char-role">קשר טקטי בכחול · תדר אלפא</div>
+          <div class="char-cta">⚡ כניסה בתור יוני</div>
+        </button>
+
+        <button type="button" id="btnSelectYael" class="char-card yael-card">
+          <div class="char-svg-stage">
+            <svg width="148" height="148" viewBox="0 0 160 160"><use href="#svg-char-yael"></use></svg>
+          </div>
+          <h2 class="char-name">יעל (YAAL)</h2>
+          <div class="char-role">קשר שטח בכתום · תדר אומגה</div>
+          <div class="char-cta">🔥 כניסה בתור יעל (YAAL)</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Steiner List Output Modal -->
+  <div id="steinerModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="steinerModalTitle">
+    <div class="modal-card">
+      <div class="modal-top-bar">
+        <h2 id="steinerModalTitle" class="modal-title">📜 רשימת שטיינר הרשמית</h2>
+        <button type="button" id="btnCloseSteinerModal" class="close-modal-btn" aria-label="סגור">✕</button>
+      </div>
+
+      <div id="steinerSyncNotice" style="font-size:0.78rem;color:var(--neon-green);margin-bottom:10px;font-weight:700;">
+        ✓ כל השמירות הממתינות הושלמו והנתונים סונכרנו מהשרת
+      </div>
+
+      <div class="steiner-summary-cards">
+        <div class="sum-box yoni">
+          <span id="sumYoniDays" class="sum-num" style="color:var(--yoni-bright)">0</span>
+          <span class="sum-label">ימים ליוני</span>
+        </div>
+        <div class="sum-box yael">
+          <span id="sumYaelDays" class="sum-num" style="color:var(--yael-bright)">0</span>
+          <span class="sum-label">ימים ליעל (YAAL)</span>
+        </div>
+        <div class="sum-box">
+          <span id="sumTotalAssigned" class="sum-num" style="color:var(--neon-gold)">0</span>
+          <span class="sum-label">סה״כ שובצו (מתוך 96)</span>
+        </div>
+      </div>
+
+      <div class="steiner-actions-row">
+        <button type="button" id="btnDownloadCsv" class="action-btn csv">📥 הורד רשימת שטיינר.csv</button>
+        <button type="button" id="btnCopyWhatsapp" class="action-btn wa">💬 העתק לוואטסאפ</button>
+        <button type="button" id="btnPrintSteiner" class="action-btn print">🖨️ הדפס גרסה נקייה</button>
+      </div>
+
+      <div class="steiner-table-wrap">
+        <table class="steiner-table">
+          <thead>
+            <tr>
+              <th>תאריך</th>
+              <th>יום בשבוע</th>
+              <th>משתתף</th>
+              <th>חג / מועד / סופ״ש</th>
+            </tr>
+          </thead>
+          <tbody id="steinerTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Setup & Code.gs Modal -->
+  <div id="setupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="setupModalTitle">
+    <div class="modal-card">
+      <div class="modal-top-bar">
+        <h2 id="setupModalTitle" class="modal-title">⚙️ קוד שרת (Code.gs) והוראות הקמה</h2>
+        <button type="button" id="btnCloseSetupModal" class="close-modal-btn" aria-label="סגור">✕</button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button type="button" id="btnCopyCodeGs" class="action-btn print">📋 העתק קוד מלא של Code.gs</button>
+        <button type="button" id="btnCopyIndexHtml" class="action-btn csv">📋 העתק קוד מלא של Index.html</button>
+      </div>
+
+      <pre id="codeGsDisplay" class="code-pre"></pre>
+    </div>
+  </div>
+
+  <!-- Toast Notification Element -->
+  <div id="arcadeToast" class="arcade-toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var START_DATE_STR = '2026-11-22';
+      var END_DATE_STR = '2027-02-25';
+      var STORAGE_KEY_PLAYER = 'steiner_wars_player_v1';
+      var STORAGE_KEY_DIRTY = 'steiner_wars_dirty_v1';
+      var STORAGE_KEY_LOCAL_DB = 'steiner_wars_local_sheet_mirror_v1';
+
+      var HEBREW_WEEKDAYS_SHORT = ['יום א׳', 'יום ב׳', 'יום ג׳', 'יום ד׳', 'יום ה׳', 'יום ו׳', 'שבת'];
+      var HEBREW_WEEKDAYS_LONG = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת'];
+
+      var MONTHS_META = [
+        { key: '2026-11', title: 'נובמבר 2026', subtitle: 'כסלו ה׳תשפ״ז · פתיחת המערכה', sector: 'SECTOR 01' },
+        { key: '2026-12', title: 'דצמבר 2026', subtitle: 'כסלו–טבת ה׳תשפ״ז · מבצע חנוכה', sector: 'SECTOR 02' },
+        { key: '2027-01', title: 'ינואר 2027', subtitle: 'טבת–שבט ה׳תשפ״ז · פתיחת שנה חדשה', sector: 'SECTOR 03' },
+        { key: '2027-02', title: 'פברואר 2027', subtitle: 'שבט–אדר א׳ ה׳תשפ״ז · סיום הסבב', sector: 'SECTOR 04' }
+      ];
+
+      var VERIFIED_HOLIDAYS = {
+        '2026-12-04': '🕎 ערב חנוכה (נר א׳)',
+        '2026-12-05': '🕎 חנוכה יום א׳ (נר ב׳)',
+        '2026-12-06': '🕎 חנוכה יום ב׳ (נר ג׳)',
+        '2026-12-07': '🕎 חנוכה יום ג׳ (נר ד׳)',
+        '2026-12-08': '🕎 חנוכה יום ד׳ (נר ה׳)',
+        '2026-12-09': '🕎 חנוכה יום ה׳ (נר ו׳)',
+        '2026-12-10': '🕎 חנוכה יום ו׳ · ר״ח טבת',
+        '2026-12-11': '🕎 חנוכה יום ז׳ · ר״ח טבת',
+        '2026-12-12': '🕎 זאת חנוכה (יום ח׳)',
+        '2026-12-20': '⏳ צום עשרה בטבת',
+        '2026-12-31': '🗣️ יום הלשון העברית · ערב שנה אזרחית',
+        '2027-01-01': '🎉 ראש השנה האזרחית 2027',
+        '2027-01-09': '🌒 ראש חודש שבט',
+        '2027-01-23': '🌳 ט״ו בשבט · שבת שירה',
+        '2027-01-27': '🕯️ יום הזיכרון הבין-לאומי לשואה',
+        '2027-02-07': '💜 יום המשפחה · ר״ח אדר א׳',
+        '2027-02-08': '🌒 ר״ח אדר א׳ (יום ב׳)',
+        '2027-02-21': '🎭 פורים קטן',
+        '2027-02-22': '🏰 שושן פורים קטן'
+      };
+
+      function normalizePlayerCode(val) {
+        if (val === 'YAAL' || val === 'Yaal' || val === 'Yael') return 'YAAL';
+        if (val === 'Yoni') return 'Yoni';
+        return 'empty';
+      }
+
+      function pad2(n) {
+        return n < 10 ? '0' + n : String(n);
+      }
+
+      function isLeapYear(y) {
+        return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+      }
+
+      function getDaysInMonth(y, m) {
+        var days = [31, isLeapYear(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        return days[m - 1];
+      }
+
+      function getDayOfWeekIndex(y, m, d) {
+        var t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+        var year = m < 3 ? y - 1 : y;
+        return (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m - 1] + d) % 7;
+      }
+
+      function getTodayJerusalemStr() {
+        try {
+          var parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Jerusalem',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).formatToParts(new Date());
+          var y = '', m = '', d = '';
+          for (var i = 0; i < parts.length; i++) {
+            if (parts[i].type === 'year') y = parts[i].value;
+            if (parts[i].type === 'month') m = parts[i].value;
+            if (parts[i].type === 'day') d = parts[i].value;
+          }
+          if (y && m && d) return y + '-' + m + '-' + d;
+        } catch (e) {}
+        var now = new Date();
+        return now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+      }
+
+      function generateAllDaysInRange() {
+        var list = [];
+        var y = 2026, m = 11, d = 22;
+        var todayStr = getTodayJerusalemStr();
+
+        while (true) {
+          var dateStr = y + '-' + pad2(m) + '-' + pad2(d);
+          var monthKey = y + '-' + pad2(m);
+          var dow = getDayOfWeekIndex(y, m, d);
+          var holiday = VERIFIED_HOLIDAYS[dateStr] || '';
+
+          list.push({
+            date: dateStr,
+            year: y,
+            month: m,
+            day: d,
+            monthKey: monthKey,
+            displayShort: pad2(d) + '.' + pad2(m),
+            displayFull: pad2(d) + '.' + pad2(m) + '.' + y,
+            dowIndex: dow,
+            weekdayShort: HEBREW_WEEKDAYS_SHORT[dow],
+            weekdayLong: HEBREW_WEEKDAYS_LONG[dow],
+            isFriday: dow === 5,
+            isSaturday: dow === 6,
+            isWeekend: dow === 5 || dow === 6,
+            holiday: holiday,
+            isToday: dateStr === todayStr
+          });
+
+          if (dateStr === END_DATE_STR) break;
+
+          d++;
+          if (d > getDaysInMonth(y, m)) {
+            d = 1;
+            m++;
+            if (m > 12) {
+              m = 1;
+              y++;
+            }
+          }
+        }
+        return list;
+      }
+
+      var ALL_DAYS = generateAllDaysInRange();
+
+      var soundEnabled = true;
+      var audioCtx = null;
+
+      function getAudioContext() {
+        if (!soundEnabled) return null;
+        try {
+          if (!audioCtx) {
+            var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) audioCtx = new AudioContextClass();
+          }
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function playArcadeTone(type) {
+        var ctx = getAudioContext();
+        if (!ctx) return;
+        try {
+          var now = ctx.currentTime;
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          if (type === 'claim-yoni') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.11);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+            osc.start(now);
+            osc.stop(now + 0.13);
+          } else if (type === 'claim-yael') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(740, now + 0.12);
+            gain.gain.setValueAtTime(0.14, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            osc.start(now);
+            osc.stop(now + 0.14);
+          } else if (type === 'conquer') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(330, now);
+            osc.frequency.setValueAtTime(660, now + 0.06);
+            osc.frequency.setValueAtTime(990, now + 0.12);
+            gain.gain.setValueAtTime(0.11, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+            osc.start(now);
+            osc.stop(now + 0.22);
+          } else if (type === 'clear') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(360, now);
+            osc.frequency.exponentialRampToValueAtTime(190, now + 0.1);
+            gain.gain.setValueAtTime(0.09, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+            osc.start(now);
+            osc.stop(now + 0.11);
+          } else if (type === 'fanfare') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.setValueAtTime(659.25, now + 0.08);
+            osc.frequency.setValueAtTime(783.99, now + 0.16);
+            osc.frequency.setValueAtTime(1046.5, now + 0.24);
+            gain.gain.setValueAtTime(0.13, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+            osc.start(now);
+            osc.stop(now + 0.42);
+          }
+        } catch (e) {}
+      }
+
+      var activePlayer = null; // 'Yoni' | 'YAAL'
+      var currentFilter = 'all';
+      var serverRecords = {};
+      var dirtyChanges = {};
+      var saveDebounceTimer = null;
+      var syncIntervalTimer = null;
+      var isSavingInFlight = false;
+      var queuedFollowUpSave = false;
+      var saveWaiters = [];
+      var broadcastChannel = null;
+
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          broadcastChannel = new BroadcastChannel('steiner_wars_live_sync');
+          broadcastChannel.onmessage = function(ev) {
+            if (ev && ev.data && ev.data.type === 'sheet_updated') {
+              syncFromServer(true);
+            }
+          };
+        }
+      } catch (e) {}
+
+      function safeGetStorage(key) {
+        try {
+          return window.localStorage.getItem(key);
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function safeSetStorage(key, val) {
+        try {
+          window.localStorage.setItem(key, val);
+        } catch (e) {}
+      }
+
+      function loadPersistedDirtyChanges() {
+        var raw = safeGetStorage(STORAGE_KEY_DIRTY);
+        if (!raw) return;
+        try {
+          var parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            dirtyChanges = parsed;
+          }
+        } catch (e) {}
+      }
+
+      function persistDirtyChanges() {
+        safeSetStorage(STORAGE_KEY_DIRTY, JSON.stringify(dirtyChanges));
+      }
+
+      function getEffectiveOwner(dateStr) {
+        if (dirtyChanges[dateStr]) {
+          return normalizePlayerCode(dirtyChanges[dateStr].assignedTo);
+        }
+        if (serverRecords[dateStr] && serverRecords[dateStr].assignedTo) {
+          return normalizePlayerCode(serverRecords[dateStr].assignedTo);
+        }
+        return 'empty';
+      }
+
+      function hasDirtyChanges() {
+        return Object.keys(dirtyChanges).length > 0;
+      }
+
+      // Vercel serves this HTML and proxies requests to Apps Script -> Google Sheets.
+      // The existing game logic, sound effects, rendering and offline dirty queue remain unchanged.
+      var STEINER_API_URL = '/api/calendar';
+
+      function requestCalendarApi(method, changesArray) {
+        var options = {
+          method: method,
+          cache: 'no-store',
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/json' }
+        };
+        if (method === 'POST') {
+          options.headers['Content-Type'] = 'application/json';
+          options.body = JSON.stringify({ changes: changesArray });
+        }
+        return fetch(STEINER_API_URL, options)
+          .then(function(response) {
+            return response.text().then(function(body) {
+              var data;
+              try {
+                data = JSON.parse(body);
+              } catch (err) {
+                throw new Error('Vercel API returned a non-JSON response (HTTP ' + response.status + ')');
+              }
+              if (!response.ok || !data || !data.ok) {
+                throw new Error((data && data.error) || 'Google Sheets sync failed');
+              }
+              return data;
+            });
+          });
+      }
+
+      function callServerGetCalendarData() {
+        return requestCalendarApi('GET');
+      }
+
+      function callServerSaveDateChanges(changesArray) {
+        return requestCalendarApi('POST', changesArray);
+      }
+
+      function setSyncUiState(state, message) {
+        var dot = document.getElementById('syncDot');
+        var text = document.getElementById('syncStatusText');
+        if (!dot || !text) return;
+        dot.className = 'sync-dot';
+        if (state === 'pending') dot.classList.add('pending');
+        else if (state === 'saving') dot.classList.add('saving');
+        else if (state === 'error') dot.classList.add('error');
+        text.textContent = message;
+      }
+
+      function updateLastSyncClock() {
+        var label = document.getElementById('lastSyncTimeLabel');
+        if (!label) return;
+        try {
+          var timeStr = new Intl.DateTimeFormat('he-IL', {
+            timeZone: 'Asia/Jerusalem',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          }).format(new Date());
+          var modeNote = 'Google Sheets';
+          label.textContent = 'סנכרון (' + modeNote + '): ' + timeStr;
+        } catch (e) {}
+      }
+
+      function scheduleDebouncedSave() {
+        if (saveDebounceTimer) {
+          clearTimeout(saveDebounceTimer);
+        }
+        var count = Object.keys(dirtyChanges).length;
+        setSyncUiState('pending', 'ממתין לשמירה (' + count + ' שינויים)...');
+        saveDebounceTimer = setTimeout(function() {
+          saveDebounceTimer = null;
+          flushDirtyChanges();
+        }, 2000);
+      }
+
+      function resolveAllSaveWaiters() {
+        while (saveWaiters.length > 0) {
+          var fn = saveWaiters.shift();
+          try { fn(); } catch (e) {}
+        }
+      }
+
+      function flushDirtyChanges() {
+        if (saveDebounceTimer) {
+          clearTimeout(saveDebounceTimer);
+          saveDebounceTimer = null;
+        }
+
+        var keys = Object.keys(dirtyChanges);
+        if (keys.length === 0) {
+          if (!isSavingInFlight) {
+            resolveAllSaveWaiters();
+          }
+          return Promise.resolve();
+        }
+
+        if (isSavingInFlight) {
+          queuedFollowUpSave = true;
+          return new Promise(function(resolve) {
+            saveWaiters.push(resolve);
+          });
+        }
+
+        isSavingInFlight = true;
+        queuedFollowUpSave = false;
+
+        var snapshot = [];
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          snapshot.push({
+            date: k,
+            assignedTo: normalizePlayerCode(dirtyChanges[k].assignedTo),
+            clientUpdatedAt: dirtyChanges[k].clientUpdatedAt
+          });
+        }
+
+        setSyncUiState('saving', 'שומר ' + snapshot.length + ' שינויים בשרת...');
+
+        var payload = snapshot.map(function(item) {
+          return { date: item.date, assignedTo: item.assignedTo };
+        });
+
+        return callServerSaveDateChanges(payload)
+          .then(function(res) {
+            if (res && res.records) {
+              serverRecords = res.records;
+            }
+            for (var j = 0; j < snapshot.length; j++) {
+              var sent = snapshot[j];
+              var currentDirty = dirtyChanges[sent.date];
+              if (currentDirty && currentDirty.clientUpdatedAt === sent.clientUpdatedAt) {
+                delete dirtyChanges[sent.date];
+              }
+            }
+            persistDirtyChanges();
+            isSavingInFlight = false;
+            updateLastSyncClock();
+            renderBoardStateOnly();
+
+            if (hasDirtyChanges() || queuedFollowUpSave) {
+              queuedFollowUpSave = false;
+              return flushDirtyChanges();
+            } else {
+              setSyncUiState('ok', 'נשמר ומסונכרן מול השרת ✓');
+              resolveAllSaveWaiters();
+            }
+          })
+          .catch(function() {
+            isSavingInFlight = false;
+            persistDirtyChanges();
+            setSyncUiState('error', 'שגיאת רשת — השינויים שמורים מקומית, מנסה שוב...');
+            showToast('⚠️ שגיאת תקשורת. השינויים שמורים מקומית ויסונכרנו אוטומטית.');
+            resolveAllSaveWaiters();
+          });
+      }
+
+      function syncFromServer(isSilent) {
+        if (isSavingInFlight) return Promise.resolve();
+
+        return callServerGetCalendarData()
+          .then(function(res) {
+            if (res && res.records) {
+              serverRecords = res.records;
+              updateLastSyncClock();
+              renderBoardStateOnly();
+            }
+            if (hasDirtyChanges()) {
+              if (!saveDebounceTimer && !isSavingInFlight) {
+                flushDirtyChanges();
+              }
+            } else {
+              setSyncUiState('ok', 'מסונכרן מול השרת ✓');
+            }
+          })
+          .catch(function() {
+            if (!isSilent) {
+              setSyncUiState('error', 'אין חיבור לשרת — עובד מנתונים מקומיים');
+            }
+          });
+      }
+
+      function buildCalendarDom() {
+        var container = document.getElementById('calendarContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        for (var mIdx = 0; mIdx < MONTHS_META.length; mIdx++) {
+          var meta = MONTHS_META[mIdx];
+          var section = document.createElement('section');
+          section.className = 'month-section';
+          section.id = 'month-' + meta.key;
+          section.setAttribute('data-month-section', meta.key);
+
+          var header = document.createElement('div');
+          header.className = 'month-header';
+          header.innerHTML =
+            '<div class="month-title-group">' +
+              '<span class="month-sector-tag">' + meta.sector + '</span>' +
+              '<div>' +
+                '<h2 class="month-title">' + meta.title + '</h2>' +
+                '<div style="font-size:0.74rem;color:var(--text-muted)">' + meta.subtitle + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="month-stats-pills">' +
+              '<span class="m-stat-yoni" id="mstat-yoni-' + meta.key + '">יוני: 0</span>' +
+              '<span class="m-stat-yael" id="mstat-yael-' + meta.key + '">יעל (YAAL): 0</span>' +
+            '</div>';
+          section.appendChild(header);
+
+          var grid = document.createElement('div');
+          grid.className = 'days-grid';
+
+          var monthDays = ALL_DAYS.filter(function(item) {
+            return item.monthKey === meta.key;
+          });
+
+          for (var i = 0; i < monthDays.length; i++) {
+            var dObj = monthDays[i];
+            var card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'day-card' +
+              (dObj.isWeekend ? ' is-weekend' : '') +
+              (dObj.isToday ? ' is-today' : '');
+            card.id = 'day-card-' + dObj.date;
+            card.setAttribute('data-date', dObj.date);
+
+            var weekdayClass = 'day-weekday-badge';
+            var weekdayPrefix = '';
+            if (dObj.isFriday) {
+              weekdayClass += ' fri';
+              weekdayPrefix = '🕯️ ';
+            } else if (dObj.isSaturday) {
+              weekdayClass += ' sat';
+              weekdayPrefix = '✨ ';
+            }
+
+            var midBadgesHtml = '';
+            if (dObj.isToday) {
+              midBadgesHtml += '<span class="today-tag">📍 היום</span>';
+            }
+            if (dObj.holiday) {
+              midBadgesHtml += '<span class="holiday-tag">' + dObj.holiday + '</span>';
+            }
+
+            card.innerHTML =
+              '<span class="dirty-dot" id="dirty-dot-' + dObj.date + '" style="display:none" title="ממתין לשמירה בשרת"></span>' +
+              '<div class="day-top-row">' +
+                '<div class="day-num-wrap">' +
+                  '<span class="day-number">' + dObj.day + '</span>' +
+                  '<span class="day-month-short">' + dObj.displayShort + '</span>' +
+                '</div>' +
+                '<span class="' + weekdayClass + '">' + weekdayPrefix + dObj.weekdayShort + '</span>' +
+              '</div>' +
+              '<div class="day-badges-mid">' + midBadgesHtml + '</div>' +
+              '<div class="day-owner-footer" id="owner-footer-' + dObj.date + '"></div>';
+
+            card.addEventListener('click', onDayCardClick);
+            grid.appendChild(card);
+          }
+
+          section.appendChild(grid);
+          container.appendChild(section);
+        }
+
+        renderBoardStateOnly();
+      }
+
+      function renderBoardStateOnly() {
+        var totalYoni = 0;
+        var totalYaal = 0;
+        var totalEmpty = 0;
+
+        var monthCounters = {
+          '2026-11': { Yoni: 0, YAAL: 0 },
+          '2026-12': { Yoni: 0, YAAL: 0 },
+          '2027-01': { Yoni: 0, YAAL: 0 },
+          '2027-02': { Yoni: 0, YAAL: 0 }
+        };
+
+        for (var i = 0; i < ALL_DAYS.length; i++) {
+          var dObj = ALL_DAYS[i];
+          var owner = getEffectiveOwner(dObj.date);
+          var isDirty = Boolean(dirtyChanges[dObj.date]);
+
+          if (owner === 'Yoni') {
+            totalYoni++;
+            monthCounters[dObj.monthKey].Yoni++;
+          } else if (owner === 'YAAL') {
+            totalYaal++;
+            monthCounters[dObj.monthKey].YAAL++;
+          } else {
+            totalEmpty++;
+          }
+
+          var card = document.getElementById('day-card-' + dObj.date);
+          var footer = document.getElementById('owner-footer-' + dObj.date);
+          var dirtyDot = document.getElementById('dirty-dot-' + dObj.date);
+
+          if (card) {
+            card.classList.remove('owned-yoni', 'owned-yael');
+            if (owner === 'Yoni') card.classList.add('owned-yoni');
+            else if (owner === 'YAAL') card.classList.add('owned-yael');
+
+            var visible = true;
+            if (currentFilter === 'Yoni') visible = (owner === 'Yoni');
+            else if (currentFilter === 'YAAL') visible = (owner === 'YAAL');
+            else if (currentFilter === 'empty') visible = (owner === 'empty');
+            else if (currentFilter === 'special') visible = (dObj.isWeekend || Boolean(dObj.holiday));
+
+            card.style.display = visible ? 'flex' : 'none';
+          }
+
+          if (dirtyDot) {
+            dirtyDot.style.display = isDirty ? 'block' : 'none';
+          }
+
+          if (footer) {
+            if (owner === 'Yoni') {
+              footer.innerHTML =
+                '<span class="owner-pill-yoni">🔵 יוני</span>' +
+                '<span style="font-size:0.68rem;color:var(--yoni-bright)">משובץ</span>';
+            } else if (owner === 'YAAL') {
+              footer.innerHTML =
+                '<span class="owner-pill-yael">🟠 יעל (YAAL)</span>' +
+                '<span style="font-size:0.68rem;color:var(--yael-bright)">משובץ</span>';
+            } else {
+              footer.innerHTML =
+                '<span class="owner-pill-empty">פנוי לכיבוש</span>' +
+                '<span style="font-size:0.7rem;opacity:0.4">+</span>';
+            }
+          }
+        }
+
+        var elYoni = document.getElementById('countYoni');
+        var elYael = document.getElementById('countYael');
+        var elEmpty = document.getElementById('countEmpty');
+        if (elYoni) elYoni.textContent = String(totalYoni);
+        if (elYael) elYael.textContent = String(totalYaal);
+        if (elEmpty) elEmpty.textContent = totalEmpty + ' פנויים';
+
+        var totalDays = ALL_DAYS.length;
+        var pctYoni = ((totalYoni / totalDays) * 100).toFixed(1);
+        var pctYaal = ((totalYaal / totalDays) * 100).toFixed(1);
+        var pctEmpty = Math.max(0, 100 - parseFloat(pctYoni) - parseFloat(pctYaal)).toFixed(1);
+
+        var barYoni = document.getElementById('barYoni');
+        var barEmpty = document.getElementById('barEmpty');
+        var barYael = document.getElementById('barYael');
+        if (barYoni) barYoni.style.width = pctYoni + '%';
+        if (barEmpty) barEmpty.style.width = pctEmpty + '%';
+        if (barYael) barYael.style.width = pctYaal + '%';
+
+        for (var m = 0; m < MONTHS_META.length; m++) {
+          var mk = MONTHS_META[m].key;
+          var myEl = document.getElementById('mstat-yoni-' + mk);
+          var maEl = document.getElementById('mstat-yael-' + mk);
+          if (myEl) myEl.textContent = 'יוני: ' + monthCounters[mk].Yoni;
+          if (maEl) maEl.textContent = 'יעל (YAAL): ' + monthCounters[mk].YAAL;
+        }
+      }
+
+      function onDayCardClick(ev) {
+        var card = ev.currentTarget;
+        var dateStr = card.getAttribute('data-date');
+        if (!dateStr) return;
+
+        if (!activePlayer) {
+          openCharacterModal();
+          return;
+        }
+
+        var currentOwner = getEffectiveOwner(dateStr);
+        var nextOwner = 'empty';
+
+        if (currentOwner === 'empty') {
+          nextOwner = activePlayer;
+          playArcadeTone(activePlayer === 'Yoni' ? 'claim-yoni' : 'claim-yael');
+        } else if (currentOwner !== activePlayer) {
+          nextOwner = activePlayer;
+          playArcadeTone('conquer');
+          showToast('⚡ תאריך ' + formatShortHebrewDate(dateStr) + ' נכבש ע״י ' + (activePlayer === 'Yoni' ? 'יוני!' : 'יעל (YAAL)!'));
+        } else {
+          nextOwner = 'empty';
+          playArcadeTone('clear');
+        }
+
+        dirtyChanges[dateStr] = {
+          date: dateStr,
+          assignedTo: nextOwner,
+          clientUpdatedAt: Date.now()
+        };
+        persistDirtyChanges();
+
+        card.classList.remove('just-conquered');
+        void card.offsetWidth;
+        card.classList.add('just-conquered');
+
+        renderBoardStateOnly();
+        scheduleDebouncedSave();
+      }
+
+      function formatShortHebrewDate(dateStr) {
+        var p = dateStr.split('-');
+        return p[2] + '.' + p[1];
+      }
+
+      function setActivePlayer(playerName, announce) {
+        var normalized = normalizePlayerCode(playerName);
+        if (normalized !== 'Yoni' && normalized !== 'YAAL') return;
+        activePlayer = normalized;
+        safeSetStorage(STORAGE_KEY_PLAYER, normalized);
+
+        var btn = document.getElementById('btnSwitchPlayer');
+        var label = document.getElementById('activePlayerLabel');
+        if (btn && label) {
+          btn.classList.remove('player-yoni', 'player-yael');
+          if (normalized === 'Yoni') {
+            btn.classList.add('player-yoni');
+            label.textContent = 'יוני (קשר כחול)';
+          } else {
+            btn.classList.add('player-yael');
+            label.textContent = 'יעל — YAAL (קשר כתום)';
+          }
+        }
+
+        closeCharacterModal();
+        if (announce) {
+          playArcadeTone(normalized === 'Yoni' ? 'claim-yoni' : 'claim-yael');
+          showToast('🎮 מחובר בתור ' + (normalized === 'Yoni' ? 'יוני (כחול)' : 'יעל — YAAL (כתום)'));
+        }
+      }
+
+      function openCharacterModal() {
+        var modal = document.getElementById('charModal');
+        if (modal) modal.classList.remove('hidden');
+      }
+
+      function closeCharacterModal() {
+        var modal = document.getElementById('charModal');
+        if (modal) modal.classList.add('hidden');
+      }
+
+      function getSelectedChronologicalRows() {
+        var rows = [];
+        for (var i = 0; i < ALL_DAYS.length; i++) {
+          var dObj = ALL_DAYS[i];
+          var owner = getEffectiveOwner(dObj.date);
+          if (owner === 'Yoni' || owner === 'YAAL') {
+            var extraParts = [];
+            if (dObj.holiday) extraParts.push(dObj.holiday);
+            if (dObj.isFriday) extraParts.push('שישי');
+            if (dObj.isSaturday) extraParts.push('שבת');
+
+            rows.push({
+              dateIso: dObj.date,
+              dateDisplay: dObj.displayFull,
+              weekday: dObj.weekdayLong,
+              ownerCode: owner,
+              ownerHebrew: owner === 'Yoni' ? 'יוני' : 'יעל (YAAL)',
+              holidayOrNote: extraParts.join(' · ')
+            });
+          }
+        }
+        return rows;
+      }
+
+      function openSteinerListModal() {
+        var btn = document.getElementById('btnGenerateSteiner');
+        if (btn) btn.disabled = true;
+        showToast('⏳ משלים שמירות וטוען נתונים עדכניים מהשרת...');
+
+        var waitPromise = hasDirtyChanges() || isSavingInFlight
+          ? flushDirtyChanges()
+          : Promise.resolve();
+
+        waitPromise
+          .then(function() {
+            return syncFromServer(false);
+          })
+          .then(function() {
+            if (btn) btn.disabled = false;
+            populateSteinerModalDom();
+            var modal = document.getElementById('steinerModal');
+            if (modal) modal.classList.remove('hidden');
+            playArcadeTone('fanfare');
+          })
+          .catch(function() {
+            if (btn) btn.disabled = false;
+            populateSteinerModalDom();
+            var modal = document.getElementById('steinerModal');
+            if (modal) modal.classList.remove('hidden');
+          });
+      }
+
+      function populateSteinerModalDom() {
+        var rows = getSelectedChronologicalRows();
+        var yoniCount = 0;
+        var yaalCount = 0;
+        var tbody = document.getElementById('steinerTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        for (var i = 0; i < rows.length; i++) {
+          var r = rows[i];
+          if (r.ownerCode === 'Yoni') yoniCount++;
+          if (r.ownerCode === 'YAAL') yaalCount++;
+
+          var tr = document.createElement('tr');
+          var badgeColor = r.ownerCode === 'Yoni' ? 'var(--yoni-bright)' : 'var(--yael-bright)';
+          tr.innerHTML =
+            '<td style="font-family:monospace;font-weight:700">' + r.dateDisplay + '</td>' +
+            '<td>' + r.weekday + '</td>' +
+            '<td style="font-weight:800;color:' + badgeColor + '">' + r.ownerHebrew + '</td>' +
+            '<td>' + (r.holidayOrNote || '—') + '</td>';
+          tbody.appendChild(tr);
+        }
+
+        if (rows.length === 0) {
+          var emptyTr = document.createElement('tr');
+          emptyTr.innerHTML =
+            '<td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">' +
+            'עדיין לא נבחרו תאריכים בלוח. לחצו על ימים בלוח כדי לשבץ אותם ליוני או ליעל (YAAL)!' +
+            '</td>';
+          tbody.appendChild(emptyTr);
+        }
+
+        var elSumYoni = document.getElementById('sumYoniDays');
+        var elSumYael = document.getElementById('sumYaelDays');
+        var elSumTotal = document.getElementById('sumTotalAssigned');
+        if (elSumYoni) elSumYoni.textContent = String(yoniCount);
+        if (elSumYael) elSumYael.textContent = String(yaalCount);
+        if (elSumTotal) elSumTotal.textContent = String(yoniCount + yaalCount);
+      }
+
+      function downloadSteinerCsv() {
+        var rows = getSelectedChronologicalRows();
+        var yoniCount = rows.filter(function(r) { return r.ownerCode === 'Yoni'; }).length;
+        var yaalCount = rows.filter(function(r) { return r.ownerCode === 'YAAL'; }).length;
+
+        function csvEscape(val) {
+          var s = String(val == null ? '' : val);
+          if (s.indexOf('"') !== -1 || s.indexOf(',') !== -1 || s.indexOf('\n') !== -1) {
+            return '"' + s.replace(/"/g, '""') + '"';
+          }
+          return s;
+        }
+
+        var lines = [];
+        lines.push(['תאריך', 'תאריך ISO', 'יום בשבוע', 'משתתף', 'חג / מועד'].map(csvEscape).join(','));
+        for (var i = 0; i < rows.length; i++) {
+          var r = rows[i];
+          lines.push([
+            r.dateDisplay,
+            r.dateIso,
+            r.weekday,
+            r.ownerHebrew,
+            r.holidayOrNote
+          ].map(csvEscape).join(','));
+        }
+        lines.push('');
+        lines.push(['סיכום ימים ליוני', yoniCount, '', '', ''].map(csvEscape).join(','));
+        lines.push(['סיכום ימים ליעל (YAAL)', yaalCount, '', '', ''].map(csvEscape).join(','));
+        lines.push(['סה״כ ימים משובצים', rows.length, '', '', ''].map(csvEscape).join(','));
+
+        var csvContent = '\uFEFF' + lines.join('\r\n');
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'רשימת שטיינר.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+        showToast('📥 הקובץ "רשימת שטיינר.csv" הורד בהצלחה!');
+      }
+
+      function buildWhatsappText() {
+        var rows = getSelectedChronologicalRows();
+        var yoniCount = rows.filter(function(r) { return r.ownerCode === 'Yoni'; }).length;
+        var yaalCount = rows.filter(function(r) { return r.ownerCode === 'YAAL'; }).length;
+
+        var lines = [];
+        lines.push('📡 *STEINER WARS — רשימת שטיינר* 📜');
+        lines.push('🗓️ טווח: 22.11.2026 עד 25.02.2027');
+        lines.push('🔵 *יוני:* ' + yoniCount + ' ימים | 🟠 *יעל (YAAL):* ' + yaalCount + ' ימים');
+        lines.push('');
+
+        if (rows.length === 0) {
+          lines.push('(טרם נבחרו תאריכים)');
+        } else {
+          for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            var icon = r.ownerCode === 'Yoni' ? '🔵' : '🟠';
+            var extra = r.holidayOrNote ? ' (' + r.holidayOrNote + ')' : '';
+            lines.push(icon + ' *' + r.dateDisplay + '* | ' + r.weekday + ' — *' + r.ownerHebrew + '*' + extra);
+          }
+        }
+        return lines.join('\n');
+      }
+
+      function copyTextToClipboard(text, successMsg) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(function() {
+              showToast(successMsg);
+            })
+            .catch(function() {
+              fallbackCopyText(text, successMsg);
+            });
+        } else {
+          fallbackCopyText(text, successMsg);
+        }
+      }
+
+      function fallbackCopyText(text, successMsg) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast(successMsg);
+        } catch (e) {
+          showToast('לא ניתן להעתיק אוטומטית בדפדפן זה');
+        }
+        document.body.removeChild(ta);
+      }
+
+      var toastTimeout = null;
+      function showToast(msg) {
+        var el = document.getElementById('arcadeToast');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('show');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(function() {
+          el.classList.remove('show');
+        }, 2600);
+      }
+
+      function populateCodeGsViewer() {
+        var pre = document.getElementById('codeGsDisplay');
+        if (!pre) return;
+        pre.textContent = "VALID_PLAYERS: Object.freeze(['Yoni', 'YAAL', 'Yael', 'empty'])";
+      }
+
+      function wireEvents() {
+        var btnYoni = document.getElementById('btnSelectYoni');
+        var btnYael = document.getElementById('btnSelectYael');
+        if (btnYoni) btnYoni.addEventListener('click', function() { setActivePlayer('Yoni', true); });
+        if (btnYael) btnYael.addEventListener('click', function() { setActivePlayer('YAAL', true); });
+
+        var btnSwitch = document.getElementById('btnSwitchPlayer');
+        if (btnSwitch) btnSwitch.addEventListener('click', openCharacterModal);
+
+        var btnSound = document.getElementById('btnToggleSound');
+        if (btnSound) {
+          btnSound.addEventListener('click', function() {
+            soundEnabled = !soundEnabled;
+            var icon = document.getElementById('soundIcon');
+            if (icon) icon.textContent = soundEnabled ? '🔊' : '🔇';
+            showToast(soundEnabled ? '🔊 אפקטים קוליים הופעלו' : '🔇 צלילים הושתקו');
+          });
+        }
+
+        var btnManualSync = document.getElementById('btnManualSync');
+        if (btnManualSync) {
+          btnManualSync.addEventListener('click', function() {
+            if (hasDirtyChanges()) {
+              flushDirtyChanges();
+            } else {
+              syncFromServer(false);
+              showToast('🔄 מסנכרן מול השרת...');
+            }
+          });
+        }
+
+        var jumpBtns = document.querySelectorAll('[data-jump]');
+        for (var i = 0; i < jumpBtns.length; i++) {
+          jumpBtns[i].addEventListener('click', function(ev) {
+            var targetId = ev.currentTarget.getAttribute('data-jump');
+            var targetEl = document.getElementById(targetId);
+            if (targetEl) {
+              targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          });
+        }
+
+        var filterBtns = document.querySelectorAll('[data-filter]');
+        for (var j = 0; j < filterBtns.length; j++) {
+          filterBtns[j].addEventListener('click', function(ev) {
+            for (var k = 0; k < filterBtns.length; k++) {
+              filterBtns[k].classList.remove('active');
+            }
+            ev.currentTarget.classList.add('active');
+            currentFilter = ev.currentTarget.getAttribute('data-filter') || 'all';
+            renderBoardStateOnly();
+          });
+        }
+
+        var btnSteiner = document.getElementById('btnGenerateSteiner');
+        if (btnSteiner) btnSteiner.addEventListener('click', openSteinerListModal);
+
+        var btnCloseSteiner = document.getElementById('btnCloseSteinerModal');
+        if (btnCloseSteiner) {
+          btnCloseSteiner.addEventListener('click', function() {
+            var modal = document.getElementById('steinerModal');
+            if (modal) modal.classList.add('hidden');
+          });
+        }
+
+        var btnCsv = document.getElementById('btnDownloadCsv');
+        if (btnCsv) btnCsv.addEventListener('click', downloadSteinerCsv);
+
+        var btnWa = document.getElementById('btnCopyWhatsapp');
+        if (btnWa) {
+          btnWa.addEventListener('click', function() {
+            var txt = buildWhatsappText();
+            copyTextToClipboard(txt, '💬 רשימת שטיינר הועתקה! מוכנה להדבקה בוואטסאפ');
+          });
+        }
+
+        var btnPrint = document.getElementById('btnPrintSteiner');
+        if (btnPrint) {
+          btnPrint.addEventListener('click', function() {
+            window.print();
+          });
+        }
+
+        var btnOpenSetup = document.getElementById('btnOpenSetup');
+        if (btnOpenSetup) {
+          btnOpenSetup.addEventListener('click', function() {
+            var modal = document.getElementById('setupModal');
+            if (modal) modal.classList.remove('hidden');
+          });
+        }
+
+        var btnCloseSetup = document.getElementById('btnCloseSetupModal');
+        if (btnCloseSetup) {
+          btnCloseSetup.addEventListener('click', function() {
+            var modal = document.getElementById('setupModal');
+            if (modal) modal.classList.add('hidden');
+          });
+        }
+
+        var btnCopyCodeGs = document.getElementById('btnCopyCodeGs');
+        if (btnCopyCodeGs) {
+          btnCopyCodeGs.addEventListener('click', function() {
+            var pre = document.getElementById('codeGsDisplay');
+            if (pre) {
+              copyTextToClipboard(pre.textContent, '📋 הקוד של Code.gs הועתק ללוח!');
+            }
+          });
+        }
+
+        var btnCopyIndexHtml = document.getElementById('btnCopyIndexHtml');
+        if (btnCopyIndexHtml) {
+          btnCopyIndexHtml.addEventListener('click', function() {
+            var fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+            copyTextToClipboard(fullHtml, '📋 הקוד המלא של Index.html הועתק ללוח!');
+          });
+        }
+      }
+
+      function initApp() {
+        loadPersistedDirtyChanges();
+        populateCodeGsViewer();
+        buildCalendarDom();
+        wireEvents();
+
+        var savedPlayer = normalizePlayerCode(safeGetStorage(STORAGE_KEY_PLAYER));
+        if (savedPlayer === 'Yoni' || savedPlayer === 'YAAL') {
+          setActivePlayer(savedPlayer, false);
+        } else {
+          openCharacterModal();
+        }
+
+        syncFromServer(false);
+        if (syncIntervalTimer) clearInterval(syncIntervalTimer);
+        syncIntervalTimer = setInterval(function() {
+          syncFromServer(true);
+        }, 5000);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+        initApp();
+      }
+    })();
+  </script>
+</body>
+</html>
