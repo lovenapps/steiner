@@ -40,7 +40,7 @@ export default {
       for (const change of data.changes) {
         if (!change || typeof change.date !== 'string' ||
             !/^\d{4}-\d{2}-\d{2}$/.test(change.date) ||
-            !['Yoni', 'YAAL', 'Yael', 'empty'].includes(change.assignedTo)) {
+            !['Yoni', 'YAAL', 'Yael', 'empty', 'Both'].includes(change.assignedTo)) {
           return respond(400, { ok: false, error: 'Invalid change record' });
         }
       }
