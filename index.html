@@ -589,6 +589,13 @@
       box-shadow: 0 0 16px rgba(255, 122, 0, 0.28), inset 0 0 12px rgba(255, 122, 0, 0.12);
     }
 
+    /* Two players may share a date; retain the original arcade palette. */
+    .day-card.owned-both {
+      background: linear-gradient(120deg, rgba(0, 229, 255, 0.24) 0%, rgba(9, 27, 53, 0.95) 49%, rgba(255, 122, 0, 0.26) 100%);
+      border-color: var(--neon-gold);
+      box-shadow: 0 0 13px rgba(0, 229, 255, 0.22), 0 0 13px rgba(255, 122, 0, 0.18);
+    }
+
     /* Conquest Animation */
     @keyframes conquerPop {
       0% { transform: scale(0.88); }
@@ -1464,6 +1471,22 @@
     </div>
   </div>
 
+  <!-- Shared date: ask whether to replace the other player or join. -->
+  <div id="ownershipChoiceModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="ownershipChoiceTitle">
+    <div class="modal-card" style="max-width:450px;">
+      <div class="modal-top-bar">
+        <h2 id="ownershipChoiceTitle" class="modal-title">⚔️ התאריך כבר משובץ</h2>
+        <button type="button" id="btnCancelOwnershipX" class="close-modal-btn" aria-label="ביטול">✕</button>
+      </div>
+      <p id="ownershipChoiceDescription" style="margin:0 0 18px;color:var(--text-main);font-weight:700;line-height:1.7;"></p>
+      <div class="steiner-actions-row" style="margin-bottom:8px;">
+        <button type="button" id="btnReplaceOwner" class="action-btn" style="border-color:var(--neon-pink);">⚔️ במקום</button>
+        <button type="button" id="btnJoinOwner" class="action-btn" style="border-color:var(--neon-green);">🤝 בנוסף</button>
+      </div>
+      <button type="button" id="btnCancelOwnership" class="action-btn" style="width:100%;">ביטול</button>
+    </div>
+  </div>
+
   <!-- Setup & Code.gs Modal -->
   <div id="setupModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="setupModalTitle">
     <div class="modal-card">
@@ -1529,6 +1552,7 @@
       function normalizePlayerCode(val) {
         if (val === 'YAAL' || val === 'Yaal' || val === 'Yael') return 'YAAL';
         if (val === 'Yoni') return 'Yoni';
+        if (val === 'Both') return 'Both';
         return 'empty';
       }
 
@@ -1696,6 +1720,7 @@
       var activePlayer = null; // 'Yoni' | 'YAAL'
       var currentFilter = 'all';
       var serverRecords = {};
+      var pendingOwnershipDate = null;
       var dirtyChanges = {};
       var saveDebounceTimer = null;
       var syncIntervalTimer = null;
@@ -2031,6 +2056,7 @@
       function renderBoardStateOnly() {
         var totalYoni = 0;
         var totalYaal = 0;
+        var totalBoth = 0;
         var totalEmpty = 0;
 
         var monthCounters = {
@@ -2045,28 +2071,30 @@
           var owner = getEffectiveOwner(dObj.date);
           var isDirty = Boolean(dirtyChanges[dObj.date]);
 
-          if (owner === 'Yoni') {
+          if (owner === 'Yoni' || owner === 'Both') {
             totalYoni++;
             monthCounters[dObj.monthKey].Yoni++;
-          } else if (owner === 'YAAL') {
+          }
+          if (owner === 'YAAL' || owner === 'Both') {
             totalYaal++;
             monthCounters[dObj.monthKey].YAAL++;
-          } else {
-            totalEmpty++;
           }
+          if (owner === 'Both') totalBoth++;
+          if (owner === 'empty') totalEmpty++;
 
           var card = document.getElementById('day-card-' + dObj.date);
           var footer = document.getElementById('owner-footer-' + dObj.date);
           var dirtyDot = document.getElementById('dirty-dot-' + dObj.date);
 
           if (card) {
-            card.classList.remove('owned-yoni', 'owned-yael');
+            card.classList.remove('owned-yoni', 'owned-yael', 'owned-both');
             if (owner === 'Yoni') card.classList.add('owned-yoni');
             else if (owner === 'YAAL') card.classList.add('owned-yael');
+            else if (owner === 'Both') card.classList.add('owned-both');
 
             var visible = true;
-            if (currentFilter === 'Yoni') visible = (owner === 'Yoni');
-            else if (currentFilter === 'YAAL') visible = (owner === 'YAAL');
+            if (currentFilter === 'Yoni') visible = (owner === 'Yoni' || owner === 'Both');
+            else if (currentFilter === 'YAAL') visible = (owner === 'YAAL' || owner === 'Both');
             else if (currentFilter === 'empty') visible = (owner === 'empty');
             else if (currentFilter === 'special') visible = (dObj.isWeekend || Boolean(dObj.holiday));
 
@@ -2086,6 +2114,11 @@
               footer.innerHTML =
                 '<span class="owner-pill-yael">🟠 יעל (YAAL)</span>' +
                 '<span style="font-size:0.68rem;color:var(--yael-bright)">משובץ</span>';
+            } else if (owner === 'Both') {
+              footer.innerHTML =
+                '<span style="display:inline-flex;flex-wrap:wrap;gap:6px;"><span class="owner-pill-yoni">🔵 יוני</span>' +
+                '<span class="owner-pill-yael">🟠 יעל</span></span>' +
+                '<span style="font-size:0.68rem;color:var(--neon-gold)">ביחד</span>';
             } else {
               footer.innerHTML =
                 '<span class="owner-pill-empty">פנוי לכיבוש</span>' +
@@ -2102,9 +2135,11 @@
         if (elEmpty) elEmpty.textContent = totalEmpty + ' פנויים';
 
         var totalDays = ALL_DAYS.length;
-        var pctYoni = ((totalYoni / totalDays) * 100).toFixed(1);
-        var pctYaal = ((totalYaal / totalDays) * 100).toFixed(1);
-        var pctEmpty = Math.max(0, 100 - parseFloat(pctYoni) - parseFloat(pctYaal)).toFixed(1);
+        // Each shared day contributes half a segment to each player's bar,
+        // while the numeric scoreboard counts it once for each player.
+        var pctYoni = (((totalYoni - totalBoth / 2) / totalDays) * 100).toFixed(1);
+        var pctYaal = (((totalYaal - totalBoth / 2) / totalDays) * 100).toFixed(1);
+        var pctEmpty = ((totalEmpty / totalDays) * 100).toFixed(1);
 
         var barYoni = document.getElementById('barYoni');
         var barEmpty = document.getElementById('barEmpty');
@@ -2122,31 +2157,7 @@
         }
       }
 
-      function onDayCardClick(ev) {
-        var card = ev.currentTarget;
-        var dateStr = card.getAttribute('data-date');
-        if (!dateStr) return;
-
-        if (!activePlayer) {
-          openCharacterModal();
-          return;
-        }
-
-        var currentOwner = getEffectiveOwner(dateStr);
-        var nextOwner = 'empty';
-
-        if (currentOwner === 'empty') {
-          nextOwner = activePlayer;
-          playArcadeTone(activePlayer === 'Yoni' ? 'claim-yoni' : 'claim-yael');
-        } else if (currentOwner !== activePlayer) {
-          nextOwner = activePlayer;
-          playArcadeTone('conquer');
-          showToast('⚡ תאריך ' + formatShortHebrewDate(dateStr) + ' נכבש ע״י ' + (activePlayer === 'Yoni' ? 'יוני!' : 'יעל (YAAL)!'));
-        } else {
-          nextOwner = 'empty';
-          playArcadeTone('clear');
-        }
-
+      function saveOwnershipSelection(dateStr, nextOwner, soundType, message) {
         dirtyChanges[dateStr] = {
           date: dateStr,
           assignedTo: nextOwner,
@@ -2154,12 +2165,81 @@
         };
         persistDirtyChanges();
 
-        card.classList.remove('just-conquered');
-        void card.offsetWidth;
-        card.classList.add('just-conquered');
-
+        var card = document.getElementById('day-card-' + dateStr);
+        if (card) {
+          card.classList.remove('just-conquered');
+          void card.offsetWidth;
+          card.classList.add('just-conquered');
+        }
+        playArcadeTone(soundType);
+        if (message) showToast(message);
         renderBoardStateOnly();
         scheduleDebouncedSave();
+      }
+
+      function showOwnershipChoice(dateStr, existingOwner) {
+        pendingOwnershipDate = dateStr;
+        var otherName = existingOwner === 'Yoni' ? 'יוני' : 'יעל';
+        var playerName = activePlayer === 'Yoni' ? 'יוני' : 'יעל';
+        var description = document.getElementById('ownershipChoiceDescription');
+        if (description) {
+          description.textContent = 'התאריך ' + formatShortHebrewDate(dateStr) + ' שייך ל' + otherName +
+            '. האם לשבץ את ' + playerName + ' במקומו, או בנוסף אליו?';
+        }
+        var modal = document.getElementById('ownershipChoiceModal');
+        if (modal) modal.classList.remove('hidden');
+        var joinButton = document.getElementById('btnJoinOwner');
+        if (joinButton) joinButton.focus();
+      }
+
+      function closeOwnershipChoice() {
+        pendingOwnershipDate = null;
+        var modal = document.getElementById('ownershipChoiceModal');
+        if (modal) modal.classList.add('hidden');
+      }
+
+      function resolveOwnershipChoice(addAlongside) {
+        if (!pendingOwnershipDate || !activePlayer) return;
+        var dateStr = pendingOwnershipDate;
+        var otherOwner = getEffectiveOwner(dateStr);
+        closeOwnershipChoice();
+        // A fresh server sync might have changed the selected day while the modal was open.
+        // Re-open the choice only if another player still owns the date.
+        if (otherOwner === 'empty' || otherOwner === activePlayer || otherOwner === 'Both') {
+          syncFromServer(false);
+          showToast('התאריך עודכן בזמן הבחירה. בדקו ובחרו שוב.');
+          return;
+        }
+        var nextOwner = addAlongside ? 'Both' : activePlayer;
+        saveOwnershipSelection(
+          dateStr, nextOwner, addAlongside ? 'fanfare' : 'conquer',
+          addAlongside
+            ? '🤝 יוני ויעל משובצים ביחד ב־' + formatShortHebrewDate(dateStr)
+            : '⚡ תאריך ' + formatShortHebrewDate(dateStr) + ' נכבש ע״י ' + (activePlayer === 'Yoni' ? 'יוני!' : 'יעל!')
+        );
+      }
+
+      function onDayCardClick(ev) {
+        var dateStr = ev.currentTarget.getAttribute('data-date');
+        if (!dateStr) return;
+        if (!activePlayer) {
+          openCharacterModal();
+          return;
+        }
+
+        var currentOwner = getEffectiveOwner(dateStr);
+        if (currentOwner === 'empty') {
+          saveOwnershipSelection(dateStr, activePlayer,
+            activePlayer === 'Yoni' ? 'claim-yoni' : 'claim-yael');
+        } else if (currentOwner === 'Both') {
+          // Clicking a shared date removes just the active player.
+          saveOwnershipSelection(dateStr, activePlayer === 'Yoni' ? 'YAAL' : 'Yoni', 'clear');
+        } else if (currentOwner === activePlayer) {
+          saveOwnershipSelection(dateStr, 'empty', 'clear');
+        } else {
+          // Opposing player owns this date: ask replace vs. join, never overwrite silently.
+          showOwnershipChoice(dateStr, currentOwner);
+        }
       }
 
       function formatShortHebrewDate(dateStr) {
@@ -2208,7 +2288,7 @@
         for (var i = 0; i < ALL_DAYS.length; i++) {
           var dObj = ALL_DAYS[i];
           var owner = getEffectiveOwner(dObj.date);
-          if (owner === 'Yoni' || owner === 'YAAL') {
+          if (owner === 'Yoni' || owner === 'YAAL' || owner === 'Both') {
             var extraParts = [];
             if (dObj.holiday) extraParts.push(dObj.holiday);
             if (dObj.isFriday) extraParts.push('שישי');
@@ -2219,7 +2299,7 @@
               dateDisplay: dObj.displayFull,
               weekday: dObj.weekdayLong,
               ownerCode: owner,
-              ownerHebrew: owner === 'Yoni' ? 'יוני' : 'יעל (YAAL)',
+              ownerHebrew: owner === 'Both' ? 'יוני + יעל (YAAL)' : (owner === 'Yoni' ? 'יוני' : 'יעל (YAAL)'),
               holidayOrNote: extraParts.join(' · ')
             });
           }
@@ -2265,11 +2345,11 @@
 
         for (var i = 0; i < rows.length; i++) {
           var r = rows[i];
-          if (r.ownerCode === 'Yoni') yoniCount++;
-          if (r.ownerCode === 'YAAL') yaalCount++;
+          if (r.ownerCode === 'Yoni' || r.ownerCode === 'Both') yoniCount++;
+          if (r.ownerCode === 'YAAL' || r.ownerCode === 'Both') yaalCount++;
 
           var tr = document.createElement('tr');
-          var badgeColor = r.ownerCode === 'Yoni' ? 'var(--yoni-bright)' : 'var(--yael-bright)';
+          var badgeColor = r.ownerCode === 'Both' ? 'var(--neon-gold)' : (r.ownerCode === 'Yoni' ? 'var(--yoni-bright)' : 'var(--yael-bright)');
           tr.innerHTML =
             '<td style="font-family:monospace;font-weight:700">' + r.dateDisplay + '</td>' +
             '<td>' + r.weekday + '</td>' +
@@ -2292,13 +2372,13 @@
         var elSumTotal = document.getElementById('sumTotalAssigned');
         if (elSumYoni) elSumYoni.textContent = String(yoniCount);
         if (elSumYael) elSumYael.textContent = String(yaalCount);
-        if (elSumTotal) elSumTotal.textContent = String(yoniCount + yaalCount);
+        if (elSumTotal) elSumTotal.textContent = String(rows.length);
       }
 
       function downloadSteinerCsv() {
         var rows = getSelectedChronologicalRows();
-        var yoniCount = rows.filter(function(r) { return r.ownerCode === 'Yoni'; }).length;
-        var yaalCount = rows.filter(function(r) { return r.ownerCode === 'YAAL'; }).length;
+        var yoniCount = rows.filter(function(r) { return r.ownerCode === 'Yoni' || r.ownerCode === 'Both'; }).length;
+        var yaalCount = rows.filter(function(r) { return r.ownerCode === 'YAAL' || r.ownerCode === 'Both'; }).length;
 
         function csvEscape(val) {
           var s = String(val == null ? '' : val);
@@ -2340,8 +2420,8 @@
 
       function buildWhatsappText() {
         var rows = getSelectedChronologicalRows();
-        var yoniCount = rows.filter(function(r) { return r.ownerCode === 'Yoni'; }).length;
-        var yaalCount = rows.filter(function(r) { return r.ownerCode === 'YAAL'; }).length;
+        var yoniCount = rows.filter(function(r) { return r.ownerCode === 'Yoni' || r.ownerCode === 'Both'; }).length;
+        var yaalCount = rows.filter(function(r) { return r.ownerCode === 'YAAL' || r.ownerCode === 'Both'; }).length;
 
         var lines = [];
         lines.push('📡 *STEINER WARS — רשימת שטיינר* 📜');
@@ -2354,7 +2434,7 @@
         } else {
           for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
-            var icon = r.ownerCode === 'Yoni' ? '🔵' : '🟠';
+            var icon = r.ownerCode === 'Both' ? '🔵🟠' : (r.ownerCode === 'Yoni' ? '🔵' : '🟠');
             var extra = r.holidayOrNote ? ' (' + r.holidayOrNote + ')' : '';
             lines.push(icon + ' *' + r.dateDisplay + '* | ' + r.weekday + ' — *' + r.ownerHebrew + '*' + extra);
           }
@@ -2408,10 +2488,25 @@
       function populateCodeGsViewer() {
         var pre = document.getElementById('codeGsDisplay');
         if (!pre) return;
-        pre.textContent = "VALID_PLAYERS: Object.freeze(['Yoni', 'YAAL', 'Yael', 'empty'])";
+        pre.textContent = "VALID_PLAYERS: Object.freeze(['Yoni', 'YAAL', 'Yael', 'empty', 'Both'])";
       }
 
       function wireEvents() {
+        var replaceButton = document.getElementById('btnReplaceOwner');
+        if (replaceButton) replaceButton.addEventListener('click', function() { resolveOwnershipChoice(false); });
+        var joinButton = document.getElementById('btnJoinOwner');
+        if (joinButton) joinButton.addEventListener('click', function() { resolveOwnershipChoice(true); });
+        var cancelChoice = document.getElementById('btnCancelOwnership');
+        if (cancelChoice) cancelChoice.addEventListener('click', closeOwnershipChoice);
+        var cancelX = document.getElementById('btnCancelOwnershipX');
+        if (cancelX) cancelX.addEventListener('click', closeOwnershipChoice);
+        var choiceModal = document.getElementById('ownershipChoiceModal');
+        if (choiceModal) choiceModal.addEventListener('click', function(ev) {
+          if (ev.target === choiceModal) closeOwnershipChoice();
+        });
+        document.addEventListener('keydown', function(ev) {
+          if (ev.key === 'Escape' && pendingOwnershipDate) closeOwnershipChoice();
+        });
         var btnYoni = document.getElementById('btnSelectYoni');
         var btnYael = document.getElementById('btnSelectYael');
         if (btnYoni) btnYoni.addEventListener('click', function() { setActivePlayer('Yoni', true); });
